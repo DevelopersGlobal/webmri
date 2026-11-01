@@ -10,10 +10,11 @@ import (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, `webmri %s — an MRI for any web app
+	fmt.Fprintf(os.Stderr, `webmri %s — an MRI for websites and web apps
 
-One command shows what is inside a web app: its stack, design tokens,
-routes, forms and programmatic surface, with evidence for every claim.
+One command shows what a site publicly serves over HTTP: stack fingerprints,
+design tokens, routes, forms and programmatic surface, with evidence for
+every claim.
 
 Usage:
   webmri [scan] <url> [flags]
