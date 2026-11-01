@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -96,6 +97,28 @@ func sameHost(base *url.URL, link string) bool {
 		return strings.TrimPrefix(strings.ToLower(h), "www.")
 	}
 	return strip(l.Hostname()) == strip(base.Hostname())
+}
+
+// nonPageExts are URL path suffixes that never render as pages, so the
+// crawler does not spend its page budget on them.
+var nonPageExts = map[string]bool{
+	".pdf": true, ".zip": true, ".tar": true, ".gz": true, ".tgz": true,
+	".rar": true, ".7z": true, ".png": true, ".jpg": true, ".jpeg": true,
+	".gif": true, ".webp": true, ".svg": true, ".ico": true, ".avif": true,
+	".mp4": true, ".webm": true, ".mov": true, ".mp3": true, ".wav": true,
+	".ogg": true, ".woff": true, ".woff2": true, ".ttf": true, ".otf": true,
+	".eot": true, ".css": true, ".js": true, ".mjs": true, ".map": true,
+	".wasm": true, ".exe": true, ".dmg": true, ".apk": true,
+}
+
+// pageLike reports whether a URL is worth crawling as a page.
+func pageLike(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	ext := strings.ToLower(path.Ext(u.Path))
+	return !nonPageExts[ext]
 }
 
 // cleanLink resolves ref against base and drops the fragment. Empty on error.
@@ -302,22 +325,27 @@ func Scan(target string, opt Options) (*Report, error) {
 
 	seeds := []string{base.String()}
 	if !opt.NoCrawl {
-		seeds = append(seeds, fetchSitemapURLs(client, base, opt)...)
+		for _, s := range fetchSitemapURLs(client, base, opt) {
+			if pageLike(s) {
+				seeds = append(seeds, s)
+			}
+		}
 	}
-	queue := dedupeStrings(seeds)
 	visited := map[string]bool{}
+	var queue []string
+	for _, s := range dedupeStrings(seeds) {
+		if !visited[s] {
+			visited[s] = true
+			queue = append(queue, s)
+		}
+	}
 	var pages []pageData
 
 	for len(pages) < opt.MaxPages && len(queue) > 0 {
 		var batch []string
 		for len(queue) > 0 && len(pages)+len(batch) < opt.MaxPages {
-			next := queue[0]
+			batch = append(batch, queue[0])
 			queue = queue[1:]
-			if visited[next] {
-				continue
-			}
-			visited[next] = true
-			batch = append(batch, next)
 		}
 		if len(batch) == 0 {
 			break
@@ -328,7 +356,8 @@ func Scan(target string, opt Options) (*Report, error) {
 				continue
 			}
 			for _, link := range pd.htmlInfo.links {
-				if sameHost(base, link) && !visited[link] {
+				if sameHost(base, link) && pageLike(link) && !visited[link] {
+					visited[link] = true
 					queue = append(queue, link)
 				}
 			}

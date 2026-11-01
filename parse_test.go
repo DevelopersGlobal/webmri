@@ -144,3 +144,18 @@ func TestDefaultFormMethod(t *testing.T) {
 		t.Fatalf("form %+v", info.forms)
 	}
 }
+
+func TestPageLike(t *testing.T) {
+	page := []string{"https://x.test/", "https://x.test/about", "https://x.test/a.b/c", "https://x.test/file"}
+	for _, u := range page {
+		if !pageLike(u) {
+			t.Fatalf("pageLike(%s) = false", u)
+		}
+	}
+	nonPage := []string{"https://x.test/logo.png", "https://x.test/a/report.PDF", "https://x.test/app.js?v=2", "https://x.test/f.woff2", "https://x.test/d.zip", "::bad"}
+	for _, u := range nonPage {
+		if pageLike(u) {
+			t.Fatalf("pageLike(%s) = true", u)
+		}
+	}
+}

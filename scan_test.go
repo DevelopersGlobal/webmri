@@ -26,6 +26,9 @@ func fixtureServer(t *testing.T) *httptest.Server {
 			<a href="/about">About</a>
 			<a href="/contact">Contact</a>
 			<a href="/api/users">API</a>
+			<a href="/logo.png">Logo</a>
+			<a href="/files/report.PDF">Report</a>
+			<a href="/app.js">Script</a>
 			<form action="/search" method="post"><input type="text" name="q"></form>
 			</body></html>`)
 	}
@@ -96,6 +99,11 @@ func TestScanEndToEnd(t *testing.T) {
 	}
 	if len(rep.Pages) != 4 {
 		t.Fatalf("expected 4 pages (/ /about /contact /api/users), got %d: %v", len(rep.Pages), rep.Pages)
+	}
+	for _, p := range rep.Pages {
+		if strings.Contains(p.URL, ".png") || strings.Contains(strings.ToLower(p.URL), ".pdf") || strings.HasSuffix(p.URL, ".js") {
+			t.Fatalf("non-page URL crawled: %s", p.URL)
+		}
 	}
 	routeSet := map[string]bool{}
 	for _, r := range rep.Routes {
