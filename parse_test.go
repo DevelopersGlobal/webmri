@@ -76,6 +76,9 @@ const fixtureHTML = `<!doctype html>
 <meta name="generator" content="FixtureGen 1.0">
 <meta name="description" content="A test app">
 <link rel="stylesheet" href="/styles.css">
+<link rel="alternate" type="application/rss+xml" href="feeds/rss.xml#latest">
+<link rel="alternate" type="application/atom+xml; charset=utf-8" href="https://fixture.test/atom.xml">
+<link rel="alternate" type="text/html" href="/not-a-feed">
 <style>:root { --brand: #ff6600; }</style>
 <script src="/_next/static/chunk.js"></script>
 <script src="/_next/static/chunk.js"></script>
@@ -107,6 +110,9 @@ func TestParseHTML(t *testing.T) {
 	}
 	if len(info.stylesheetURLs) != 1 || info.stylesheetURLs[0] != "https://fixture.test/styles.css" {
 		t.Fatalf("stylesheets %v", info.stylesheetURLs)
+	}
+	if len(info.feeds) != 2 || info.feeds[0] != (FeedInfo{URL: "https://fixture.test/feeds/rss.xml", Page: "https://fixture.test/"}) || info.feeds[1] != (FeedInfo{URL: "https://fixture.test/atom.xml", Page: "https://fixture.test/"}) {
+		t.Fatalf("feeds %v", info.feeds)
 	}
 	if len(info.styleBodies) != 1 || !strings.Contains(info.styleBodies[0], "--brand") {
 		t.Fatalf("style bodies %v", info.styleBodies)

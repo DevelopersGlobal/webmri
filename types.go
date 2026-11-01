@@ -24,6 +24,12 @@ type FormInfo struct {
 	Inputs []string `json:"inputs"`
 }
 
+// FeedInfo describes a feed link found on a page.
+type FeedInfo struct {
+	URL  string `json:"url"`
+	Page string `json:"page"`
+}
+
 // PageResult is the fetch outcome for one page.
 type PageResult struct {
 	URL              string `json:"url"`
@@ -72,6 +78,7 @@ type Report struct {
 	Design    DesignTokens `json:"design"`
 	Routes    []string     `json:"routes"`
 	Forms     []FormInfo   `json:"forms"`
+	Feeds     []FeedInfo   `json:"feeds"`
 	APIs      []APIHit     `json:"api_surface"`
 	Notes     []string     `json:"notes"`
 }
