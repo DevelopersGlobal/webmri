@@ -27,15 +27,13 @@ A Markdown (and JSON) anatomy of the target:
 
 Requires [Go 1.23+](https://go.dev/dl/) to build. The result is a single static binary with one module dependency (`golang.org/x/net`).
 
-Until the initial implementation PR is merged, the code lives on the `feat/initial-implementation` branch, so build from a clone:
+Build from a clone:
 
 ```bash
-git clone -b feat/initial-implementation https://github.com/DevelopersGlobal/webmri.git
+git clone https://github.com/DevelopersGlobal/webmri.git
 cd webmri
 go build -o webmri .
 ```
-
-After the PR is merged, clone the default branch instead (drop the `-b feat/initial-implementation` flag).
 
 ## Quick start
 
