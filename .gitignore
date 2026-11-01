@@ -1,4 +1,4 @@
-webmri
+/webmri
 *.test
 /dist/
 /report.md

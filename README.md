@@ -5,7 +5,7 @@
 webmri reads what servers send: HTML, headers and stylesheets. It does not run JavaScript, log in, or touch private APIs, so it reports the HTTP-visible surface of a site — which for most sites is the honest picture.
 
 ```bash
-webmri scan https://tailwindcss.com
+./webmri scan https://tailwindcss.com
 ```
 
 ```
@@ -39,19 +39,19 @@ go build -o webmri .
 
 ```bash
 # Scan a site (default: up to 25 pages, 8 parallel fetches)
-webmri scan https://example.com
+./webmri scan https://example.com
 
 # Save the report, and get machine-readable JSON too
-webmri scan https://example.com --out report.md --json report.json
+./webmri scan https://example.com --out report.md --json report.json
 
 # Just the landing page
-webmri scan https://example.com --no-crawl
+./webmri scan https://example.com --no-crawl
 
 # Tune the crawl
-webmri scan https://example.com --pages 100 --concurrency 16 --timeout 8s
+./webmri scan https://example.com --pages 100 --concurrency 16 --timeout 8s
 ```
 
-Flags after the URL work too. `webmri --h` lists everything.
+Flags after the URL work too. `./webmri -h` lists everything.
 
 ## Sample output
 
