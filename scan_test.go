@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -231,5 +233,54 @@ func TestHumanBytes(t *testing.T) {
 		if got := humanBytes(in); got != want {
 			t.Fatalf("humanBytes(%d) = %s, want %s", in, got, want)
 		}
+	}
+}
+
+func TestFetchDecodesGzipHTML(t *testing.T) {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	fmt.Fprint(gz, `<!doctype html><html><head><title>Zipped</title></head><body>compressed</body></html>`)
+	gz.Close()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Accept-Encoding"); got != "gzip" {
+			t.Errorf("Accept-Encoding = %q, want exactly gzip", got)
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Write(buf.Bytes())
+	}))
+	defer srv.Close()
+	pd := fetchPage(newClient(Options{Timeout: 5 * time.Second}.withDefaults()), srv.URL, Options{Timeout: 5 * time.Second}.withDefaults())
+	if pd.Error != "" {
+		t.Fatalf("unexpected error: %s", pd.Error)
+	}
+	if pd.Title != "Zipped" {
+		t.Fatalf("title = %q, want Zipped (gzip not decoded)", pd.Title)
+	}
+}
+
+func TestFetchUnsupportedEncodingIsVisible(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Encoding", "br")
+		w.Write([]byte{0x1b, 0x03, 0x00})
+	}))
+	defer srv.Close()
+	pd := fetchPage(newClient(Options{Timeout: 5 * time.Second}.withDefaults()), srv.URL, Options{Timeout: 5 * time.Second}.withDefaults())
+	if !strings.Contains(pd.Error, `unsupported Content-Encoding "br"`) {
+		t.Fatalf("error = %q, want unsupported Content-Encoding", pd.Error)
+	}
+}
+
+func TestFetchCorruptGzipIsVisible(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Write([]byte("not actually gzip"))
+	}))
+	defer srv.Close()
+	pd := fetchPage(newClient(Options{Timeout: 5 * time.Second}.withDefaults()), srv.URL, Options{Timeout: 5 * time.Second}.withDefaults())
+	if !strings.Contains(pd.Error, "invalid gzip response") {
+		t.Fatalf("error = %q, want invalid gzip response", pd.Error)
 	}
 }

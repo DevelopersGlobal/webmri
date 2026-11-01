@@ -162,22 +162,39 @@ func get(client *http.Client, raw, ua string) (*http.Response, []byte, int64, er
 	}
 	req.Header.Set("User-Agent", ua)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,text/css,*/*;q=0.5")
+	// Advertise gzip only. Setting Accept-Encoding explicitly disables the
+	// transport's transparent decompression, so decoding below is
+	// deterministic: gzip is decoded, anything else becomes a visible
+	// error instead of silently stored compressed bytes.
+	req.Header.Set("Accept-Encoding", "gzip")
 	start := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, nil, 0, err
 	}
 	defer resp.Body.Close()
-	body := resp.Body
-	if strings.EqualFold(resp.Header.Get("Content-Encoding"), "gzip") {
-		gz, gzErr := gzip.NewReader(body)
-		if gzErr == nil {
-			defer gz.Close()
-			body = gz
-		}
-	}
-	data, err := io.ReadAll(io.LimitReader(body, maxBodyBytes))
+	data, err := decodeBody(resp, maxBodyBytes)
 	return resp, data, time.Since(start).Milliseconds(), err
+}
+
+// decodeBody reads up to limit bytes of the response's decoded content.
+// Only gzip is supported, matching the Accept-Encoding header sent in
+// get; any other Content-Encoding is an explicit error so a compressed
+// page is never silently misreported as empty or unparseable.
+func decodeBody(resp *http.Response, limit int64) ([]byte, error) {
+	switch enc := strings.ToLower(strings.TrimSpace(resp.Header.Get("Content-Encoding"))); enc {
+	case "", "identity":
+		return io.ReadAll(io.LimitReader(resp.Body, limit))
+	case "gzip", "x-gzip":
+		gz, err := gzip.NewReader(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid gzip response: %w", err)
+		}
+		defer gz.Close()
+		return io.ReadAll(io.LimitReader(gz, limit))
+	default:
+		return nil, fmt.Errorf("unsupported Content-Encoding %q (webmri only requests gzip)", enc)
+	}
 }
 
 // fetchSitemapURLs discovers sitemap locations from robots.txt and the
