@@ -12,6 +12,16 @@ func WriteJSON(rep *Report) ([]byte, error) {
 	return json.MarshalIndent(rep, "", "  ")
 }
 
+// cell makes a string safe for one pipe-delimited table cell: a literal |
+// would start a new column and a newline would start a new row, so | is
+// escaped and newlines are collapsed to spaces.
+func cell(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", " ")
+	s = strings.ReplaceAll(s, "\n", " ")
+	s = strings.ReplaceAll(s, "\r", " ")
+	return strings.ReplaceAll(s, "|", "\\|")
+}
+
 // perfStats returns fastest/slowest/median fetch times over successful pages.
 func perfStats(pages []PageResult) (fastest, slowest, median PageResult, ok bool) {
 	var good []PageResult
@@ -55,8 +65,8 @@ func WriteMarkdown(rep *Report) string {
 		w("| Failed fetches | %d |", errs)
 	}
 	if fast, slow, med, ok := perfStats(rep.Pages); ok {
-		w("| Fastest page | %s (%d ms) |", fast.URL, fast.DurationMS)
-		w("| Slowest page | %s (%d ms) |", slow.URL, slow.DurationMS)
+		w("| Fastest page | %s (%d ms) |", cell(fast.URL), fast.DurationMS)
+		w("| Slowest page | %s (%d ms) |", cell(slow.URL), slow.DurationMS)
 		w("| Median page fetch | %d ms |", med.DurationMS)
 	}
 	w("")
@@ -65,7 +75,7 @@ func WriteMarkdown(rep *Report) string {
 	w("| page | images | missing alt | empty alt | html lang | h1 |")
 	w("| --- | ---: | ---: | ---: | --- | --- |")
 	for _, p := range rep.Pages {
-		w("| %s | %d | %d | %d | %t | %t |", p.URL, p.Images, p.ImagesMissingAlt, p.ImagesEmptyAlt, p.HasLang, p.HasH1)
+		w("| %s | %d | %d | %d | %t | %t |", cell(p.URL), p.Images, p.ImagesMissingAlt, p.ImagesEmptyAlt, p.HasLang, p.HasH1)
 	}
 	w("")
 
@@ -82,7 +92,7 @@ func WriteMarkdown(rep *Report) string {
 			if len(f.Evidence) > 1 {
 				extra = fmt.Sprintf(" (+%d more)", len(f.Evidence)-1)
 			}
-			w("| %s | %s | %s | %s — %s%s |", f.Name, f.Category, f.Confidence, ev.Detail, ev.URL, extra)
+			w("| %s | %s | %s | %s — %s%s |", cell(f.Name), cell(f.Category), cell(f.Confidence), cell(ev.Detail), cell(ev.URL), extra)
 		}
 	}
 	w("")
