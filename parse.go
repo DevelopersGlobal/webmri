@@ -59,6 +59,7 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 	if err != nil {
 		return info
 	}
+	base = documentBase(doc, base)
 	var walk func(n *html.Node)
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode {
@@ -137,6 +138,34 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 	info.feeds = dedupeFeeds(info.feeds)
 	info.links = dedupeStrings(info.links)
 	return info
+}
+
+// documentBase returns the base URL relative references resolve against: the
+// first <base href> in the document, resolved against page, or page itself.
+func documentBase(doc *html.Node, page *url.URL) *url.URL {
+	var baseNode *html.Node
+	var find func(n *html.Node)
+	find = func(n *html.Node) {
+		if baseNode != nil {
+			return
+		}
+		if n.Type == html.ElementNode && strings.ToLower(n.Data) == "base" && hasAttr(n, "href") {
+			baseNode = n
+			return
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			find(c)
+		}
+	}
+	find(doc)
+	if baseNode == nil {
+		return page
+	}
+	resolved, err := page.Parse(strings.TrimSpace(attrVal(baseNode, "href")))
+	if err != nil {
+		return page
+	}
+	return resolved
 }
 
 func hasAttr(n *html.Node, key string) bool {
