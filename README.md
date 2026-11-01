@@ -1,6 +1,8 @@
 # webmri
 
-**An MRI for any web app.** One command shows what is inside: the stack it runs on, the design tokens it uses, its routes, forms and programmatic surface — and the evidence behind every claim. Seconds, no setup, no API keys.
+**An MRI for websites and web apps.** One command shows what a site publicly serves over HTTP — the stack its pages advertise, the design tokens in its CSS, its routes, forms and programmatic surface — with the evidence behind every claim. Seconds, no setup, no API keys.
+
+webmri reads what servers send: HTML, headers and stylesheets. It does not run JavaScript, log in, or touch private APIs, so it reports the HTTP-visible surface of a site — which for most sites is the honest picture.
 
 ```bash
 webmri scan https://tailwindcss.com
@@ -14,10 +16,10 @@ webmri: 12 pages in 1235 ms, 5 stack findings
 
 A Markdown (and JSON) anatomy of the target:
 
-- **Stack** — frameworks, CMSs, hosting, CDNs, analytics, payment and monitoring services. Each finding is labelled `observed` (directly seen in a response) or `inferred` (a weaker pattern suggested it), with the URL and the exact signal as evidence.
+- **Stack** — frameworks, CMSs, hosting, CDNs, analytics, payment and monitoring services, detected by heuristic fingerprints. Each finding is labelled `observed` (the pattern was directly seen in a response) or `inferred` (a weaker pattern suggested it), with the URL and the exact signal as evidence. A fingerprint is a strong hint, never a guarantee — check the evidence.
 - **Design tokens** — CSS custom properties from `:root`, most-used colors, font families, from inline styles and real stylesheets.
-- **Routes** — every same-host page found via the sitemap and link crawling, capped and polite.
-- **Forms** — method, target and fields of every HTML form, with the page it lives on.
+- **Routes** — the same-host pages found via the sitemap and link crawling, capped and polite. Not an exhaustive site map.
+- **Forms** — method, target and fields of the HTML forms found in served pages, with the page each lives on.
 - **Programmatic surface** — links and assets that look like APIs, GraphQL endpoints or API docs (inferred candidates to investigate, not confirmed endpoints).
 - **Performance snapshot** — per-page fetch times: fastest, slowest, median, total bytes.
 
@@ -73,7 +75,7 @@ Forms: POST https://app.convertkit.com/... on /blog — fields: email_address (e
 
 ## Measured speed
 
-Wall-clock times from real runs on 2026-11-01 (default flags unless noted). These are this tool's own measured numbers — not a comparison with anything else.
+Wall-clock times from real runs on 2026-11-01 (default flags unless noted). These are this tool's own measured numbers — not a comparison with anything else. They depend on hardware, network and target; your runs will differ. Measure on your own machine before quoting them.
 
 | target | pages | wall time |
 | --- | --- | --- |
