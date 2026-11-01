@@ -19,6 +19,7 @@ type htmlInfo struct {
 	styleBodies    []string
 	links          []string
 	forms          []FormInfo
+	feeds          []FeedInfo
 }
 
 func attrVal(n *html.Node, key string) string {
@@ -78,10 +79,24 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 					info.scripts = append(info.scripts, src)
 				}
 			case "link":
-				rel := strings.ToLower(attrVal(n, "rel"))
-				if strings.Contains(rel, "stylesheet") {
+				rel := strings.Fields(strings.ToLower(attrVal(n, "rel")))
+				hasRel := func(want string) bool {
+					for _, value := range rel {
+						if value == want {
+							return true
+						}
+					}
+					return false
+				}
+				if hasRel("stylesheet") {
 					if href := cleanLink(base, attrVal(n, "href")); href != "" {
 						info.stylesheetURLs = append(info.stylesheetURLs, href)
+					}
+				}
+				feedType := strings.ToLower(strings.TrimSpace(strings.Split(attrVal(n, "type"), ";")[0]))
+				if hasRel("alternate") && (feedType == "application/rss+xml" || feedType == "application/atom+xml") {
+					if href := cleanLink(base, attrVal(n, "href")); href != "" {
+						info.feeds = append(info.feeds, FeedInfo{URL: href, Page: pageURL})
 					}
 				}
 			case "style":
@@ -103,6 +118,7 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 	walk(doc)
 	info.scripts = dedupeStrings(info.scripts)
 	info.stylesheetURLs = dedupeStrings(info.stylesheetURLs)
+	info.feeds = dedupeFeeds(info.feeds)
 	info.links = dedupeStrings(info.links)
 	return info
 }

@@ -155,6 +155,17 @@ func WriteMarkdown(rep *Report) string {
 	}
 	w("")
 
+	w("## Feeds")
+	w("")
+	if len(rep.Feeds) == 0 {
+		w("No RSS or Atom feeds found on scanned pages.")
+	} else {
+		for _, feed := range rep.Feeds {
+			w("- %s (found on %s)", feed.URL, feed.Page)
+		}
+	}
+	w("")
+
 	w("## Programmatic surface (inferred)")
 	w("")
 	if len(rep.APIs) == 0 {

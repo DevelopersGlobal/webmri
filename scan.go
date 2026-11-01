@@ -393,6 +393,7 @@ func Scan(target string, opt Options) (*Report, error) {
 
 	rep.Stack = detectStack(pages, base)
 	rep.Forms = collectForms(pages)
+	rep.Feeds = collectFeeds(pages)
 	rep.APIs = detectAPISurface(pages, base)
 	rep.Design = extractDesign(client, pages, base, opt)
 	rep.WallMS = time.Since(start).Milliseconds()
@@ -418,6 +419,29 @@ func sortedKeys(m map[string]bool) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+
+func dedupeFeeds(in []FeedInfo) []FeedInfo {
+	seen := map[FeedInfo]bool{}
+	out := make([]FeedInfo, 0, len(in))
+	for _, feed := range in {
+		if feed.URL != "" && !seen[feed] {
+			seen[feed] = true
+			out = append(out, feed)
+		}
+	}
+	return out
+}
+
+func collectFeeds(pages []pageData) []FeedInfo {
+	var out []FeedInfo
+	for _, pd := range pages {
+		if pd.htmlInfo != nil {
+			out = append(out, pd.htmlInfo.feeds...)
+		}
+	}
+	return dedupeFeeds(out)
 }
 
 func collectForms(pages []pageData) []FormInfo {

@@ -22,6 +22,7 @@ func fixtureServer(t *testing.T) *httptest.Server {
 			<meta name="generator" content="Hugo 0.120">
 			<meta name="description" content="A test app">
 			<link rel="stylesheet" href="/styles.css">
+			<link rel="alternate" type="application/rss+xml" href="feeds/site.xml#latest">
 			<style>:root { --brand: #ff6600; }</style>
 			<script id="__NEXT_DATA__" type="application/json">{}</script>
 			</head><body>
@@ -134,6 +135,9 @@ func TestScanEndToEnd(t *testing.T) {
 	if len(rep.Forms) != 1 || rep.Forms[0].Method != "POST" {
 		t.Fatalf("forms %+v", rep.Forms)
 	}
+	if len(rep.Feeds) != 1 || rep.Feeds[0] != (FeedInfo{URL: srv.URL + "/feeds/site.xml", Page: srv.URL + "/"}) {
+		t.Fatalf("feeds %+v", rep.Feeds)
+	}
 	foundAPI := false
 	for _, a := range rep.APIs {
 		if a.Kind == "api" && strings.HasSuffix(a.URL, "/api/users") {
@@ -197,7 +201,7 @@ func TestWriteOutputs(t *testing.T) {
 		t.Fatal(err)
 	}
 	md := WriteMarkdown(rep)
-	for _, want := range []string{"# Anatomy of", "## Stack", "## Design tokens", "## Routes", "## Forms", "Next.js", "--brand", "Method and limits"} {
+	for _, want := range []string{"# Anatomy of", "## Stack", "## Design tokens", "## Routes", "## Forms", "## Feeds", "/feeds/site.xml", "Next.js", "--brand", "Method and limits"} {
 		if !strings.Contains(md, want) {
 			t.Fatalf("markdown missing %q", want)
 		}
