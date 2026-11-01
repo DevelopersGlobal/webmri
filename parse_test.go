@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 	"testing"
@@ -134,6 +136,35 @@ func TestParseHTMLGarbage(t *testing.T) {
 	info := parseHTML([]byte("not html at all \x00\x01"), mustURL(t, "https://x.test/"), "https://x.test/")
 	if info == nil {
 		t.Fatal("nil info on garbage input")
+	}
+}
+
+func TestParseHTMLAccessibilityFacts(t *testing.T) {
+	base := mustURL(t, "https://fixture.test/")
+	info := parseHTML([]byte(`<html lang="en"><body><h1>Heading</h1><img><img alt=""><img alt="photo"></body></html>`), base, "https://fixture.test/")
+	if info.images != 3 || info.imagesMissingAlt != 1 || info.imagesEmptyAlt != 1 || !info.hasLang || !info.hasH1 {
+		t.Fatalf("accessibility facts: images=%d missing_alt=%d empty_alt=%d lang=%t h1=%t; want 3, 1, 1, true, true", info.images, info.imagesMissingAlt, info.imagesEmptyAlt, info.hasLang, info.hasH1)
+	}
+	without := parseHTML([]byte(`<html><body><img alt="decorative"></body></html>`), base, "https://fixture.test/other")
+	if without.hasLang || without.hasH1 || without.images != 1 || without.imagesMissingAlt != 0 || without.imagesEmptyAlt != 0 {
+		t.Fatalf("facts for langless page: images=%d missing_alt=%d empty_alt=%d lang=%t h1=%t; want 1, 0, 0, false, false", without.images, without.imagesMissingAlt, without.imagesEmptyAlt, without.hasLang, without.hasH1)
+	}
+	page := PageResult{URL: "https://fixture.test/", Images: info.images, ImagesMissingAlt: info.imagesMissingAlt, ImagesEmptyAlt: info.imagesEmptyAlt, HasLang: info.hasLang, HasH1: info.hasH1}
+	rep := &Report{Pages: []PageResult{page}}
+	data, err := WriteJSON(rep)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	jsonPage := decoded["pages"].([]interface{})[0].(map[string]interface{})
+	if jsonPage["images"] != float64(3) || jsonPage["images_missing_alt"] != float64(1) || jsonPage["images_empty_alt"] != float64(1) || jsonPage["has_lang"] != true || jsonPage["has_h1"] != true {
+		t.Fatalf("JSON page facts %v", jsonPage)
+	}
+	if got := WriteMarkdown(rep); !strings.Contains(got, fmt.Sprintf("| %s | 3 | 1 | 1 | true | true |", page.URL)) {
+		t.Fatalf("markdown missing accessibility facts row: %s", got)
 	}
 }
 
