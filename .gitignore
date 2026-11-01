@@ -1,0 +1,5 @@
+webmri
+*.test
+/dist/
+/report.md
+/report.json
