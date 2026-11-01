@@ -60,6 +60,14 @@ func WriteMarkdown(rep *Report) string {
 		w("| Median page fetch | %d ms |", med.DurationMS)
 	}
 	w("")
+	w("## Page accessibility facts")
+	w("")
+	w("| page | images | missing alt | empty alt | html lang | h1 |")
+	w("| --- | ---: | ---: | ---: | --- | --- |")
+	for _, p := range rep.Pages {
+		w("| %s | %d | %d | %d | %t | %t |", p.URL, p.Images, p.ImagesMissingAlt, p.ImagesEmptyAlt, p.HasLang, p.HasH1)
+	}
+	w("")
 
 	w("## Stack")
 	w("")

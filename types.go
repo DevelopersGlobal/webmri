@@ -32,12 +32,17 @@ type FeedInfo struct {
 
 // PageResult is the fetch outcome for one page.
 type PageResult struct {
-	URL        string `json:"url"`
-	Status     int    `json:"status"`
-	Bytes      int    `json:"bytes"`
-	DurationMS int64  `json:"duration_ms"`
-	Title      string `json:"title,omitempty"`
-	Error      string `json:"error,omitempty"`
+	URL              string `json:"url"`
+	Status           int    `json:"status"`
+	Bytes            int    `json:"bytes"`
+	DurationMS       int64  `json:"duration_ms"`
+	Title            string `json:"title,omitempty"`
+	Images           int    `json:"images"`
+	ImagesMissingAlt int    `json:"images_missing_alt"`
+	ImagesEmptyAlt   int    `json:"images_empty_alt"`
+	HasLang          bool   `json:"has_lang"`
+	HasH1            bool   `json:"has_h1"`
+	Error            string `json:"error,omitempty"`
 }
 
 // TokenCount is one design token and how often it appeared.

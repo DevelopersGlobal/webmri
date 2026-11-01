@@ -11,15 +11,20 @@ import (
 
 // htmlInfo is everything webmri extracts from one HTML document.
 type htmlInfo struct {
-	title          string
-	generator      string
-	description    string
-	scripts        []string
-	stylesheetURLs []string
-	styleBodies    []string
-	links          []string
-	forms          []FormInfo
-	feeds          []FeedInfo
+	title            string
+	generator        string
+	description      string
+	scripts          []string
+	stylesheetURLs   []string
+	styleBodies      []string
+	links            []string
+	forms            []FormInfo
+	feeds            []FeedInfo
+	images           int
+	imagesMissingAlt int
+	imagesEmptyAlt   int
+	hasLang          bool
+	hasH1            bool
 }
 
 func attrVal(n *html.Node, key string) string {
@@ -58,6 +63,17 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 	walk = func(n *html.Node) {
 		if n.Type == html.ElementNode {
 			switch strings.ToLower(n.Data) {
+			case "html":
+				info.hasLang = hasAttr(n, "lang")
+			case "h1":
+				info.hasH1 = true
+			case "img":
+				info.images++
+				if !hasAttr(n, "alt") {
+					info.imagesMissingAlt++
+				} else if attrVal(n, "alt") == "" {
+					info.imagesEmptyAlt++
+				}
 			case "title":
 				if info.title == "" {
 					info.title = nodeText(n)
@@ -121,6 +137,15 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 	info.feeds = dedupeFeeds(info.feeds)
 	info.links = dedupeStrings(info.links)
 	return info
+}
+
+func hasAttr(n *html.Node, key string) bool {
+	for _, a := range n.Attr {
+		if strings.EqualFold(a.Key, key) {
+			return true
+		}
+	}
+	return false
 }
 
 func parseForm(form *html.Node, base *url.URL, pageURL string) FormInfo {

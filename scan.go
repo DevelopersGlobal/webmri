@@ -295,6 +295,11 @@ func fetchPage(client *http.Client, raw string, opt Options) pageData {
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 && isHTML(resp.Header, data) {
 		info := parseHTML(data, finalURL, pd.URL)
 		pd.Title = info.title
+		pd.Images = info.images
+		pd.ImagesMissingAlt = info.imagesMissingAlt
+		pd.ImagesEmptyAlt = info.imagesEmptyAlt
+		pd.HasLang = info.hasLang
+		pd.HasH1 = info.hasH1
 		pd.htmlInfo = info
 	}
 	return pd
