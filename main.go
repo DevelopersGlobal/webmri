@@ -18,6 +18,7 @@ every claim.
 
 Usage:
   webmri [scan] <url> [flags]
+  webmri -version
 
 Flags:
 `, version)
@@ -28,14 +29,15 @@ func main() { os.Exit(run(os.Args[1:])) }
 
 func run(args []string) int {
 	var (
-		pages    = flag.Int("pages", 25, "maximum same-host pages to scan (1-500)")
-		conc     = flag.Int("concurrency", 8, "parallel fetches")
-		timeout  = flag.Duration("timeout", 10*time.Second, "per-request timeout")
-		outMD    = flag.String("out", "", "write the Markdown report here (default: stdout)")
-		outJSON  = flag.String("json", "", "also write the full report as JSON to this path")
-		noCrawl  = flag.Bool("no-crawl", false, "scan only the target page, no sitemap or link crawling")
-		maxCSS   = flag.Int("css", 8, "maximum stylesheets to fetch for design tokens")
-		showHelp = flag.Bool("h", false, "show help")
+		pages       = flag.Int("pages", 25, "maximum same-host pages to scan (1-500)")
+		conc        = flag.Int("concurrency", 8, "parallel fetches")
+		timeout     = flag.Duration("timeout", 10*time.Second, "per-request timeout")
+		outMD       = flag.String("out", "", "write the Markdown report here (default: stdout)")
+		outJSON     = flag.String("json", "", "also write the full report as JSON to this path")
+		noCrawl     = flag.Bool("no-crawl", false, "scan only the target page, no sitemap or link crawling")
+		maxCSS      = flag.Int("css", 8, "maximum stylesheets to fetch for design tokens")
+		showHelp    = flag.Bool("h", false, "show help")
+		showVersion = flag.Bool("version", false, "print version and exit")
 	)
 	flag.Usage = usage
 	// Accept flags before or after the URL: parse repeatedly, pulling one
@@ -56,6 +58,10 @@ func run(args []string) int {
 	}
 	if *showHelp {
 		usage()
+		return 0
+	}
+	if *showVersion {
+		fmt.Printf("webmri %s\n", version)
 		return 0
 	}
 	if len(rest) != 1 {
