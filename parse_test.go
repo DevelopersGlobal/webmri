@@ -174,6 +174,17 @@ func TestParseHTMLAccessibilityFacts(t *testing.T) {
 	}
 }
 
+func TestParseHTMLBaseHref(t *testing.T) {
+	page := mustURL(t, "https://fixture.test/site/index.html")
+	info := parseHTML([]byte(`<html><head><base href="/docs/"><base href="/ignored/"><link rel="stylesheet" href="site.css"></head><body><a href="guide">Guide</a></body></html>`), page, "https://fixture.test/site/index.html")
+	if len(info.links) != 1 || info.links[0] != "https://fixture.test/docs/guide" {
+		t.Fatalf("base href links %v, want [https://fixture.test/docs/guide]", info.links)
+	}
+	if len(info.stylesheetURLs) != 1 || info.stylesheetURLs[0] != "https://fixture.test/docs/site.css" {
+		t.Fatalf("base href stylesheets %v, want [https://fixture.test/docs/site.css]", info.stylesheetURLs)
+	}
+}
+
 func TestDefaultFormMethod(t *testing.T) {
 	html := `<form><input name="a"></form>`
 	info := parseHTML([]byte(html), mustURL(t, "https://x.test/"), "https://x.test/")
