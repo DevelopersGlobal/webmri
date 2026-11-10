@@ -36,6 +36,7 @@ func run(args []string) int {
 		outJSON     = flag.String("json", "", "also write the full report as JSON to this path")
 		noCrawl     = flag.Bool("no-crawl", false, "scan only the target page, no sitemap or link crawling")
 		maxCSS      = flag.Int("css", 8, "maximum stylesheets to fetch for design tokens")
+		userAgent   = flag.String("ua", "", "User-Agent header for every request (default: "+defaultUA+")")
 		showHelp    = flag.Bool("h", false, "show help")
 		showVersion = flag.Bool("version", false, "print version and exit")
 	)
@@ -71,7 +72,7 @@ func run(args []string) int {
 
 	rep, err := Scan(rest[0], Options{
 		MaxPages: *pages, Concurrency: *conc, Timeout: *timeout,
-		NoCrawl: *noCrawl, MaxCSSFiles: *maxCSS,
+		NoCrawl: *noCrawl, MaxCSSFiles: *maxCSS, UserAgent: *userAgent,
 	})
 	if err != nil {
 		var ue *usageError

@@ -49,6 +49,9 @@ go build -o webmri .
 
 # Tune the crawl
 ./webmri scan https://example.com --pages 100 --concurrency 16 --timeout 8s
+
+# Identify yourself with a custom User-Agent
+./webmri scan https://example.com --ua "my-audit/1.0 (+mailto:you@example.com)"
 ```
 
 Flags after the URL work too. `./webmri -h` lists everything.

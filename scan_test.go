@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -286,5 +287,64 @@ func TestFetchCorruptGzipIsVisible(t *testing.T) {
 	pd := fetchPage(newClient(Options{Timeout: 5 * time.Second}.withDefaults()), srv.URL, Options{Timeout: 5 * time.Second}.withDefaults())
 	if !strings.Contains(pd.Error, "invalid gzip response") {
 		t.Fatalf("error = %q, want invalid gzip response", pd.Error)
+	}
+}
+
+// recordUserAgents wraps srv's handler and returns the User-Agent header of
+// every request it serves.
+func recordUserAgents(srv *httptest.Server) func() []string {
+	var mu sync.Mutex
+	var seen []string
+	next := srv.Config.Handler
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		seen = append(seen, r.Header.Get("User-Agent"))
+		mu.Unlock()
+		next.ServeHTTP(w, r)
+	})
+	return func() []string {
+		mu.Lock()
+		defer mu.Unlock()
+		return append([]string(nil), seen...)
+	}
+}
+
+func TestScanSendsCustomUserAgent(t *testing.T) {
+	srv := fixtureServer(t)
+	defer srv.Close()
+	seen := recordUserAgents(srv)
+	opt := testOpts()
+	opt.UserAgent = "my-audit-bot/2.0 (+mailto:ops@example.com)"
+	if _, err := Scan(srv.URL+"/", opt); err != nil {
+		t.Fatal(err)
+	}
+	got := seen()
+	// Page, robots.txt, sitemap and stylesheet fetches must all carry it.
+	if len(got) < 4 {
+		t.Fatalf("expected several requests, got %d", len(got))
+	}
+	for i, ua := range got {
+		if ua != opt.UserAgent {
+			t.Fatalf("request %d: User-Agent %q, want %q", i, ua, opt.UserAgent)
+		}
+	}
+}
+
+func TestScanDefaultUserAgentUnchanged(t *testing.T) {
+	srv := fixtureServer(t)
+	defer srv.Close()
+	seen := recordUserAgents(srv)
+	opt := Options{MaxPages: 10, Concurrency: 4, Timeout: 5 * time.Second}
+	if _, err := Scan(srv.URL+"/", opt); err != nil {
+		t.Fatal(err)
+	}
+	got := seen()
+	if len(got) == 0 {
+		t.Fatal("no requests recorded")
+	}
+	for i, ua := range got {
+		if ua != defaultUA {
+			t.Fatalf("request %d: User-Agent %q, want default %q", i, ua, defaultUA)
+		}
 	}
 }
