@@ -48,6 +48,13 @@ var stackRules = []stackRule{
 	{name: "WordPress", category: "cms", confidence: "observed",
 		body:      []*regexp.Regexp{re(`/wp-content/`), re(`/wp-includes/`)},
 		generator: re(`(?i)WordPress`)},
+	{name: "Drupal", category: "cms", confidence: "observed",
+		body: []*regexp.Regexp{re(`/sites/default/files/`)},
+		headers: []headerRule{
+			{"x-generator", re(`(?i)\bDrupal\b`)},
+			{"x-drupal-cache", re(`.`)},
+			{"x-drupal-dynamic-cache", re(`.`)},
+		}},
 	{name: "Shopify", category: "platform", confidence: "observed",
 		body:    []*regexp.Regexp{re(`cdn\.shopify\.com`)},
 		headers: []headerRule{{"x-shopify-stage", re(`.`)}, {"x-shopid", re(`.`)}}},
