@@ -105,3 +105,45 @@ func TestDetectAPISurface(t *testing.T) {
 		t.Fatalf("expected 3 deduped hits, got %v", hits)
 	}
 }
+
+func TestDetectStackDrupal(t *testing.T) {
+	base, _ := url.Parse("https://cms.test/")
+	cases := []struct {
+		name    string
+		headers map[string]string
+		body    string
+		detail  string
+	}{
+		{"x-generator header", map[string]string{"X-Generator": "Drupal 10 (https://www.drupal.org)"}, "",
+			"header x-generator: Drupal 10 (https://www.drupal.org)"},
+		{"x-drupal-cache header", map[string]string{"X-Drupal-Cache": "HIT"}, "",
+			"header x-drupal-cache: HIT"},
+		{"x-drupal-dynamic-cache header", map[string]string{"X-Drupal-Dynamic-Cache": "MISS"}, "",
+			"header x-drupal-dynamic-cache: MISS"},
+		{"files path in body", nil, `<img src="/sites/default/files/logo.png">`,
+			"HTML matches //sites/default/files//"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := detectStack([]pageData{pd("https://cms.test/", tc.headers, tc.body)}, base)
+			f := findFinding(fs, "Drupal")
+			if f == nil {
+				t.Fatalf("Drupal not detected, findings %+v", fs)
+			}
+			if f.Category != "cms" || f.Confidence != "observed" {
+				t.Fatalf("Drupal finding %+v", f)
+			}
+			if len(f.Evidence) != 1 || f.Evidence[0].Detail != tc.detail {
+				t.Fatalf("evidence %+v, want detail %q", f.Evidence, tc.detail)
+			}
+		})
+	}
+}
+
+func TestDetectStackDrupalIgnoresOtherGenerators(t *testing.T) {
+	base, _ := url.Parse("https://cms.test/")
+	p := pd("https://cms.test/", map[string]string{"X-Generator": "Some Other CMS 2.0"}, "<p>hi</p>")
+	if f := findFinding(detectStack([]pageData{p}, base), "Drupal"); f != nil {
+		t.Fatalf("unexpected Drupal finding %+v", f)
+	}
+}
