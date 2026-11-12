@@ -147,3 +147,47 @@ func TestDetectStackDrupalIgnoresOtherGenerators(t *testing.T) {
 		t.Fatalf("unexpected Drupal finding %+v", f)
 	}
 }
+
+func TestDetectStackGhost(t *testing.T) {
+	base, _ := url.Parse("https://blog.test/")
+	cases := []struct {
+		name   string
+		body   string
+		detail string
+	}{
+		{"meta generator", `<html><head><meta name="generator" content="Ghost 5.82"></head><body></body></html>`,
+			"meta generator: Ghost 5.82"},
+		{"content API path in body", `<script src="https://blog.test/ghost/api/content/settings/?key=abc"></script>`,
+			"HTML matches //ghost/api//"},
+		{"admin assets path in body", `<link rel="stylesheet" href="/ghost/assets/admin.css">`,
+			"HTML matches //ghost/assets//"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := detectStack([]pageData{pd("https://blog.test/", nil, tc.body)}, base)
+			f := findFinding(fs, "Ghost")
+			if f == nil {
+				t.Fatalf("Ghost not detected, findings %+v", fs)
+			}
+			if f.Category != "cms" || f.Confidence != "observed" {
+				t.Fatalf("Ghost finding %+v", f)
+			}
+			if len(f.Evidence) != 1 || f.Evidence[0].Detail != tc.detail {
+				t.Fatalf("evidence %+v, want detail %q", f.Evidence, tc.detail)
+			}
+		})
+	}
+}
+
+func TestDetectStackGhostIgnoresLookalikes(t *testing.T) {
+	base, _ := url.Parse("https://blog.test/")
+	bodies := []string{
+		`<meta name="generator" content="Ghostwriter 2.1">`,
+		`<p>A ghost story about /ghost/ paths</p>`,
+	}
+	for _, b := range bodies {
+		if f := findFinding(detectStack([]pageData{pd("https://blog.test/", nil, b)}, base), "Ghost"); f != nil {
+			t.Fatalf("unexpected Ghost finding for %q: %+v", b, f)
+		}
+	}
+}
