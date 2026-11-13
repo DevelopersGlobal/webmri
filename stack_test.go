@@ -191,3 +191,46 @@ func TestDetectStackGhostIgnoresLookalikes(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectStackWix(t *testing.T) {
+	base, _ := url.Parse("https://site.test/")
+	cases := []struct {
+		name    string
+		headers map[string]string
+		body    string
+		detail  string
+	}{
+		{"x-wix-request-id header", map[string]string{"X-Wix-Request-Id": "1715000000.123456789"}, "",
+			"header x-wix-request-id: 1715000000.123456789"},
+		{"wixstatic asset URL in body", nil, `<img src="https://static.wixstatic.com/media/abc_123~mv2.png">`,
+			`HTML matches /static\.wixstatic\.com/`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := detectStack([]pageData{pd("https://site.test/", tc.headers, tc.body)}, base)
+			f := findFinding(fs, "Wix")
+			if f == nil {
+				t.Fatalf("Wix not detected, findings %+v", fs)
+			}
+			if f.Category != "platform" || f.Confidence != "observed" {
+				t.Fatalf("Wix finding %+v", f)
+			}
+			if len(f.Evidence) != 1 || f.Evidence[0].Detail != tc.detail {
+				t.Fatalf("evidence %+v, want detail %q", f.Evidence, tc.detail)
+			}
+		})
+	}
+}
+
+func TestDetectStackWixIgnoresLookalikes(t *testing.T) {
+	base, _ := url.Parse("https://site.test/")
+	bodies := []string{
+		`<p>Built with Wix? Not this one.</p>`,
+		`<img src="https://static-wixstatic.example.com/a.png">`,
+	}
+	for _, b := range bodies {
+		if f := findFinding(detectStack([]pageData{pd("https://site.test/", nil, b)}, base), "Wix"); f != nil {
+			t.Fatalf("unexpected Wix finding for %q: %+v", b, f)
+		}
+	}
+}
