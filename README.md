@@ -52,6 +52,9 @@ go build -o webmri .
 
 # Identify yourself with a custom User-Agent
 ./webmri scan https://example.com --ua "my-audit/1.0 (+mailto:you@example.com)"
+
+# Scan gently: wait at least 200ms between request starts
+./webmri scan https://example.com --delay 200ms
 ```
 
 Flags after the URL work too. `./webmri -h` lists everything.

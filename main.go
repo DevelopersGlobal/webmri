@@ -37,6 +37,7 @@ func run(args []string) int {
 		noCrawl     = flag.Bool("no-crawl", false, "scan only the target page, no sitemap or link crawling")
 		maxCSS      = flag.Int("css", 8, "maximum stylesheets to fetch for design tokens")
 		userAgent   = flag.String("ua", "", "User-Agent header for every request (default: "+defaultUA+")")
+		delay       = flag.Duration("delay", 0, "minimum pause between requests, e.g. 200ms (default: none)")
 		showHelp    = flag.Bool("h", false, "show help")
 		showVersion = flag.Bool("version", false, "print version and exit")
 	)
@@ -70,9 +71,14 @@ func run(args []string) int {
 		return 1
 	}
 
+	if *delay < 0 {
+		fmt.Fprintln(os.Stderr, "webmri: -delay must not be negative")
+		return 1
+	}
+
 	rep, err := Scan(rest[0], Options{
 		MaxPages: *pages, Concurrency: *conc, Timeout: *timeout,
-		NoCrawl: *noCrawl, MaxCSSFiles: *maxCSS, UserAgent: *userAgent,
+		NoCrawl: *noCrawl, MaxCSSFiles: *maxCSS, UserAgent: *userAgent, Delay: *delay,
 	})
 	if err != nil {
 		var ue *usageError
