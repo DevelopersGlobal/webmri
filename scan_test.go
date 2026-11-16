@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -345,6 +346,37 @@ func TestScanDefaultUserAgentUnchanged(t *testing.T) {
 	for i, ua := range got {
 		if ua != defaultUA {
 			t.Fatalf("request %d: User-Agent %q, want default %q", i, ua, defaultUA)
+		}
+	}
+}
+
+func TestScanDelaySpacesRequests(t *testing.T) {
+	srv := fixtureServer(t)
+	defer srv.Close()
+	var mu sync.Mutex
+	var times []time.Time
+	inner := srv.Config.Handler
+	srv.Config.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		times = append(times, time.Now())
+		mu.Unlock()
+		inner.ServeHTTP(w, r)
+	})
+	opt := testOpts()
+	opt.Delay = 100 * time.Millisecond
+	if _, err := Scan(srv.URL+"/", opt); err != nil {
+		t.Fatal(err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(times) < 4 {
+		t.Fatalf("expected several requests, got %d", len(times))
+	}
+	sort.Slice(times, func(i, j int) bool { return times[i].Before(times[j]) })
+	for i := 1; i < len(times); i++ {
+		// Allow a little scheduler slack below the configured delay.
+		if gap := times[i].Sub(times[i-1]); gap < 80*time.Millisecond {
+			t.Fatalf("requests %d and %d only %v apart, want >= ~100ms", i-1, i, gap)
 		}
 	}
 }

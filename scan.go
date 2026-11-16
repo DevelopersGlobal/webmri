@@ -31,6 +31,9 @@ type Options struct {
 	NoCrawl     bool
 	UserAgent   string
 	MaxCSSFiles int
+	// Delay is the minimum spacing between the starts of consecutive HTTP
+	// requests, across all workers. Zero (the default) means no throttling.
+	Delay time.Duration
 }
 
 func (o Options) withDefaults() Options {
@@ -137,14 +140,48 @@ func cleanLink(base *url.URL, ref string) string {
 	return u.String()
 }
 
+// throttleTransport spaces out request starts so that no two begin less than
+// delay apart, however many workers are fetching concurrently.
+type throttleTransport struct {
+	base  http.RoundTripper
+	delay time.Duration
+	mu    sync.Mutex
+	next  time.Time
+}
+
+func (t *throttleTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	t.mu.Lock()
+	now := time.Now()
+	start := t.next
+	if start.Before(now) {
+		start = now
+	}
+	t.next = start.Add(t.delay)
+	t.mu.Unlock()
+	if wait := start.Sub(now); wait > 0 {
+		timer := time.NewTimer(wait)
+		select {
+		case <-timer.C:
+		case <-req.Context().Done():
+			timer.Stop()
+			return nil, req.Context().Err()
+		}
+	}
+	return t.base.RoundTrip(req)
+}
+
 func newClient(opt Options) *http.Client {
+	var transport http.RoundTripper = &http.Transport{
+		MaxIdleConns:        64,
+		MaxIdleConnsPerHost: opt.Concurrency,
+		IdleConnTimeout:     30 * time.Second,
+	}
+	if opt.Delay > 0 {
+		transport = &throttleTransport{base: transport, delay: opt.Delay}
+	}
 	return &http.Client{
-		Timeout: opt.Timeout,
-		Transport: &http.Transport{
-			MaxIdleConns:        64,
-			MaxIdleConnsPerHost: opt.Concurrency,
-			IdleConnTimeout:     30 * time.Second,
-		},
+		Timeout:   opt.Timeout,
+		Transport: transport,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 5 {
 				return http.ErrUseLastResponse
@@ -425,7 +462,6 @@ func sortedKeys(m map[string]bool) []string {
 	sort.Strings(out)
 	return out
 }
-
 
 func dedupeFeeds(in []FeedInfo) []FeedInfo {
 	seen := map[FeedInfo]bool{}
