@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"net/http"
 	"net/url"
 	"strings"
 
@@ -213,9 +212,4 @@ func parseForm(form *html.Node, base *url.URL, pageURL string) FormInfo {
 	walk(form)
 	fi.Inputs = dedupeStrings(fi.Inputs)
 	return fi
-}
-
-// headerString renders the headers webmri's rules care about, for evidence.
-func headerString(h http.Header, key string) string {
-	return h.Get(key)
 }

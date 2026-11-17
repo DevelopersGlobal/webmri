@@ -234,3 +234,51 @@ func TestDetectStackWixIgnoresLookalikes(t *testing.T) {
 		}
 	}
 }
+
+func TestDetectStackLaravel(t *testing.T) {
+	base, _ := url.Parse("https://site.test/")
+	const session = "laravel_session=eyJpdiI6IjEyMyJ9; expires=Tue, 17 Nov 2026 04:00:00 GMT; Max-Age=7200; path=/; httponly; samesite=lax"
+	cases := []struct {
+		name    string
+		cookies []string
+	}{
+		{"only cookie", []string{session}},
+		// Laravel usually sends XSRF-TOKEN before the session cookie, so the
+		// rule must look past the first Set-Cookie value.
+		{"after XSRF-TOKEN", []string{"XSRF-TOKEN=abc123; path=/; samesite=lax", session}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			p := pd("https://site.test/", nil, "<html></html>")
+			for _, c := range tc.cookies {
+				p.headers.Add("Set-Cookie", c)
+			}
+			f := findFinding(detectStack([]pageData{p}, base), "Laravel")
+			if f == nil {
+				t.Fatal("Laravel not detected")
+			}
+			if f.Category != "framework" || f.Confidence != "observed" {
+				t.Fatalf("Laravel finding %+v", f)
+			}
+			want := "header set-cookie: " + session
+			if len(f.Evidence) != 1 || f.Evidence[0].Detail != want {
+				t.Fatalf("evidence %+v, want detail %q", f.Evidence, want)
+			}
+		})
+	}
+}
+
+func TestDetectStackLaravelNeedsSessionCookie(t *testing.T) {
+	base, _ := url.Parse("https://site.test/")
+	cases := []map[string]string{
+		{"X-Powered-By": "PHP/8.3.4"},
+		{"Set-Cookie": "PHPSESSID=abc; path=/"},
+		{"Set-Cookie": "my_laravel_session=abc; path=/"},
+		{"Set-Cookie": "XSRF-TOKEN=abc; path=/"},
+	}
+	for _, h := range cases {
+		if f := findFinding(detectStack([]pageData{pd("https://site.test/", h, "<html></html>")}, base), "Laravel"); f != nil {
+			t.Fatalf("unexpected Laravel finding for %v: %+v", h, f)
+		}
+	}
+}
