@@ -72,3 +72,43 @@ func TestWriteMarkdownPlainRowsUnchanged(t *testing.T) {
 		t.Errorf("plain accessibility row changed, want:\n%s\nin:\n%s", got, md)
 	}
 }
+
+// A page's <meta name="description"> reaches both outputs (#9); a page
+// without one adds nothing, so its report renders exactly as before.
+func TestPageDescription(t *testing.T) {
+	plain := PageResult{URL: "https://example.com/", Status: 200, HasLang: true}
+	described := PageResult{URL: "https://example.com/about", Status: 200, Description: "Who we are | what we do\nand why"}
+
+	without := &Report{Tool: "webmri", Version: "test", Target: "https://example.com", Pages: []PageResult{plain}}
+	md := WriteMarkdown(without)
+	if strings.Contains(md, "## Page descriptions") || strings.Contains(md, "meta description") {
+		t.Errorf("report without descriptions gained a section:\n%s", md)
+	}
+	data, err := WriteJSON(without)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), `"description"`) {
+		t.Errorf("json without descriptions carries the field:\n%s", data)
+	}
+
+	with := &Report{Tool: "webmri", Version: "test", Target: "https://example.com", Pages: []PageResult{plain, described}}
+	md = WriteMarkdown(with)
+	want := "## Page descriptions\n\n| page | meta description |\n| --- | --- |\n| https://example.com/about | Who we are \\| what we do and why |\n\n"
+	if !strings.Contains(md, want) {
+		t.Errorf("description section missing or wrong, want:\n%s\nin:\n%s", want, md)
+	}
+	if strings.Contains(md, "| https://example.com/ | |") {
+		t.Errorf("page without a description got a row:\n%s", md)
+	}
+	data, err = WriteJSON(with)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"description": "Who we are | what we do\nand why"`) {
+		t.Errorf("json missing description:\n%s", data)
+	}
+	if strings.Count(string(data), `"description"`) != 1 {
+		t.Errorf("description should appear only on the page that has one:\n%s", data)
+	}
+}

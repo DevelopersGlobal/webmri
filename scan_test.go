@@ -152,6 +152,15 @@ func TestScanEndToEnd(t *testing.T) {
 	if len(rep.Notes) == 0 {
 		t.Fatal("notes missing")
 	}
+	for _, p := range rep.Pages {
+		want := ""
+		if p.URL == srv.URL+"/" {
+			want = "A test app"
+		}
+		if p.Description != want {
+			t.Errorf("page %s description %q, want %q", p.URL, p.Description, want)
+		}
+	}
 }
 
 func TestScanNoCrawl(t *testing.T) {
