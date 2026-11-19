@@ -79,6 +79,25 @@ func WriteMarkdown(rep *Report) string {
 	}
 	w("")
 
+	// Only pages that declare a <meta name="description"> get a row, and the
+	// section is left out when none do, so such reports render as before.
+	described := false
+	for _, p := range rep.Pages {
+		if p.Description != "" {
+			if !described {
+				w("## Page descriptions")
+				w("")
+				w("| page | meta description |")
+				w("| --- | --- |")
+				described = true
+			}
+			w("| %s | %s |", cell(p.URL), cell(p.Description))
+		}
+	}
+	if described {
+		w("")
+	}
+
 	w("## Stack")
 	w("")
 	if len(rep.Stack) == 0 {
