@@ -41,6 +41,8 @@ var stackRules = []stackRule{
 		body: []*regexp.Regexp{re(`ng-version=`), re(`\bng-app\b`)}},
 	{name: "SvelteKit", category: "framework", confidence: "observed",
 		body: []*regexp.Regexp{re(`__sveltekit`)}},
+	{name: "Remix", category: "framework", confidence: "observed",
+		body: []*regexp.Regexp{re(`\b__remixContext\b`), re(`\b__remixManifest\b`), re(`\b__remixRouteModules\b`)}},
 	{name: "Astro", category: "framework", confidence: "observed",
 		body:      []*regexp.Regexp{re(`astro-island`)},
 		generator: re(`(?i)\bAstro\b`)},
