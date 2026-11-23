@@ -37,6 +37,7 @@ type PageResult struct {
 	Bytes            int    `json:"bytes"`
 	DurationMS       int64  `json:"duration_ms"`
 	Title            string `json:"title,omitempty"`
+	Description      string `json:"description,omitempty"`
 	Images           int    `json:"images"`
 	ImagesMissingAlt int    `json:"images_missing_alt"`
 	ImagesEmptyAlt   int    `json:"images_empty_alt"`

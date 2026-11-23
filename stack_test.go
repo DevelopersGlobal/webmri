@@ -235,6 +235,49 @@ func TestDetectStackWixIgnoresLookalikes(t *testing.T) {
 	}
 }
 
+func TestDetectStackRemix(t *testing.T) {
+	base, _ := url.Parse("https://app.test/")
+	cases := []struct {
+		name   string
+		body   string
+		detail string
+	}{
+		{"remix context", `<script>window.__remixContext = {"url":"/"};</script>`,
+			`HTML matches /\b__remixContext\b/`},
+		{"remix manifest", `<script>window.__remixManifest = {"version":"abc"};</script>`,
+			`HTML matches /\b__remixManifest\b/`},
+		{"remix route modules", `<script type="module">window.__remixRouteModules = {};</script>`,
+			`HTML matches /\b__remixRouteModules\b/`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := detectStack([]pageData{pd("https://app.test/", nil, tc.body)}, base)
+			f := findFinding(fs, "Remix")
+			if f == nil {
+				t.Fatalf("Remix not detected, findings %+v", fs)
+			}
+			if f.Category != "framework" || f.Confidence != "observed" {
+				t.Fatalf("Remix finding %+v", f)
+			}
+			if len(f.Evidence) != 1 || f.Evidence[0].Detail != tc.detail {
+				t.Fatalf("evidence %+v, want detail %q", f.Evidence, tc.detail)
+			}
+		})
+	}
+}
+
+func TestDetectStackRemixIgnoresLookalikes(t *testing.T) {
+	base, _ := url.Parse("https://app.test/")
+	bodies := []string{
+		`<p>We remixed this track for the remix context contest.</p>`,
+		`<script>window.__remixContextual = {};</script>`,
+	}
+	for _, b := range bodies {
+		if f := findFinding(detectStack([]pageData{pd("https://app.test/", nil, b)}, base), "Remix"); f != nil {
+			t.Fatalf("unexpected Remix finding for %q: %+v", b, f)
+		}
+	}
+}
 func TestDetectStackLaravel(t *testing.T) {
 	base, _ := url.Parse("https://site.test/")
 	const session = "laravel_session=eyJpdiI6IjEyMyJ9; expires=Tue, 17 Nov 2026 04:00:00 GMT; Max-Age=7200; path=/; httponly; samesite=lax"

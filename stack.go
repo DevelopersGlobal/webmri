@@ -41,6 +41,8 @@ var stackRules = []stackRule{
 		body: []*regexp.Regexp{re(`ng-version=`), re(`\bng-app\b`)}},
 	{name: "SvelteKit", category: "framework", confidence: "observed",
 		body: []*regexp.Regexp{re(`__sveltekit`)}},
+	{name: "Remix", category: "framework", confidence: "observed",
+		body: []*regexp.Regexp{re(`\b__remixContext\b`), re(`\b__remixManifest\b`), re(`\b__remixRouteModules\b`)}},
 	{name: "Laravel", category: "framework", confidence: "observed",
 		// X-Powered-By: PHP alone is too generic, so only the session cookie counts.
 		headers: []headerRule{{"set-cookie", re(`^\s*laravel_session=`)}}},
