@@ -43,6 +43,9 @@ var stackRules = []stackRule{
 		body: []*regexp.Regexp{re(`__sveltekit`)}},
 	{name: "Remix", category: "framework", confidence: "observed",
 		body: []*regexp.Regexp{re(`\b__remixContext\b`), re(`\b__remixManifest\b`), re(`\b__remixRouteModules\b`)}},
+	{name: "Laravel", category: "framework", confidence: "observed",
+		// X-Powered-By: PHP alone is too generic, so only the session cookie counts.
+		headers: []headerRule{{"set-cookie", re(`^\s*laravel_session=`)}}},
 	{name: "Astro", category: "framework", confidence: "observed",
 		body:      []*regexp.Regexp{re(`astro-island`)},
 		generator: re(`(?i)\bAstro\b`)},
@@ -145,8 +148,13 @@ func detectStack(pages []pageData, base *url.URL) []Finding {
 				if pd.headers == nil {
 					continue
 				}
-				if v := headerString(pd.headers, hr.key); v != "" && hr.re.MatchString(v) {
-					add(rule, Evidence{URL: page, Detail: "header " + hr.key + ": " + v})
+				// A header such as Set-Cookie can repeat, so check every value
+				// rather than only the first one.
+				for _, v := range pd.headers.Values(hr.key) {
+					if v != "" && hr.re.MatchString(v) {
+						add(rule, Evidence{URL: page, Detail: "header " + hr.key + ": " + v})
+						break
+					}
 				}
 			}
 			if pd.htmlInfo == nil {
