@@ -338,6 +338,8 @@ func fetchPage(client *http.Client, raw string, opt Options) pageData {
 		pd.ImagesEmptyAlt = info.imagesEmptyAlt
 		pd.HasLang = info.hasLang
 		pd.HasH1 = info.hasH1
+		pd.Scripts = len(info.scripts)
+		pd.Stylesheets = len(info.stylesheetURLs)
 		pd.htmlInfo = info
 	}
 	return pd

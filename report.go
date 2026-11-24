@@ -78,6 +78,14 @@ func WriteMarkdown(rep *Report) string {
 		w("| %s | %d | %d | %d | %t | %t |", cell(p.URL), p.Images, p.ImagesMissingAlt, p.ImagesEmptyAlt, p.HasLang, p.HasH1)
 	}
 	w("")
+	w("## Page assets")
+	w("")
+	w("| page | scripts | stylesheets |")
+	w("| --- | ---: | ---: |")
+	for _, p := range rep.Pages {
+		w("| %s | %d | %d |", cell(p.URL), p.Scripts, p.Stylesheets)
+	}
+	w("")
 
 	// Only pages that declare a <meta name="description"> get a row, and the
 	// section is left out when none do, so such reports render as before.

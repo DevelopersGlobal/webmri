@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -386,6 +387,70 @@ func TestScanDelaySpacesRequests(t *testing.T) {
 		// Allow a little scheduler slack below the configured delay.
 		if gap := times[i].Sub(times[i-1]); gap < 80*time.Millisecond {
 			t.Fatalf("requests %d and %d only %v apart, want >= ~100ms", i-1, i, gap)
+		}
+	}
+}
+
+func TestScanReportsPageAssetCounts(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		if r.URL.Path == "/plain" {
+			fmt.Fprint(w, `<!doctype html><html><head><title>Plain</title></head><body>plain</body></html>`)
+			return
+		}
+		fmt.Fprint(w, `<!doctype html><html><head><title>Assets</title>
+			<link rel="stylesheet" href="/site.css">
+			<script src="/app.js"></script>
+			<script src="https://cdn.example.test/lib.js"></script>
+			</head><body><a href="/plain">Plain</a></body></html>`)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	rep, err := Scan(srv.URL+"/", testOpts())
+	if err != nil {
+		t.Fatal(err)
+	}
+	counts := map[string][2]int{}
+	for _, p := range rep.Pages {
+		counts[p.URL] = [2]int{p.Scripts, p.Stylesheets}
+	}
+	if got := counts[srv.URL+"/"]; got != [2]int{2, 1} {
+		t.Fatalf("index scripts/stylesheets %v, want [2 1]; pages %v", got, counts)
+	}
+	if got, ok := counts[srv.URL+"/plain"]; !ok || got != [2]int{0, 0} {
+		t.Fatalf("plain scripts/stylesheets %v (found %t), want [0 0]", got, ok)
+	}
+
+	data, err := WriteJSON(rep)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded struct {
+		Pages []map[string]interface{} `json:"pages"`
+	}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range decoded.Pages {
+		want := [2]float64{2, 1}
+		if p["url"] == srv.URL+"/plain" {
+			want = [2]float64{0, 0}
+		}
+		if p["scripts"] != want[0] || p["stylesheets"] != want[1] {
+			t.Fatalf("JSON page %v: want scripts=%v stylesheets=%v", p, want[0], want[1])
+		}
+	}
+
+	md := WriteMarkdown(rep)
+	for _, row := range []string{
+		"## Page assets\n\n| page | scripts | stylesheets |\n| --- | ---: | ---: |\n",
+		fmt.Sprintf("| %s/ | 2 | 1 |", srv.URL),
+		fmt.Sprintf("| %s/plain | 0 | 0 |", srv.URL),
+	} {
+		if !strings.Contains(md, row) {
+			t.Fatalf("markdown missing %q:\n%s", row, md)
 		}
 	}
 }

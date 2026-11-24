@@ -21,6 +21,7 @@ A Markdown (and JSON) anatomy of the target:
 - **Routes** — the same-host pages found via the sitemap and link crawling, capped and polite. Not an exhaustive site map.
 - **Forms** — method, target and fields of the HTML forms found in served pages, with the page each lives on.
 - **Page descriptions** — each page's `<meta name="description">`, for the pages that declare one (also `description` per page in the JSON).
+- **Page assets** — how many distinct external scripts (`<script src>`) and stylesheets (`<link rel="stylesheet">`) each page references (also `scripts` and `stylesheets` per page in the JSON).
 - **Programmatic surface** — links and assets that look like APIs, GraphQL endpoints or API docs (inferred candidates to investigate, not confirmed endpoints).
 - **Performance snapshot** — per-page fetch times: fastest, slowest, median, total bytes.
 
