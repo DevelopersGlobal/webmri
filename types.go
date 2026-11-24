@@ -43,6 +43,8 @@ type PageResult struct {
 	ImagesEmptyAlt   int    `json:"images_empty_alt"`
 	HasLang          bool   `json:"has_lang"`
 	HasH1            bool   `json:"has_h1"`
+	Scripts          int    `json:"scripts"`
+	Stylesheets      int    `json:"stylesheets"`
 	Error            string `json:"error,omitempty"`
 }
 

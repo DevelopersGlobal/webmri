@@ -48,11 +48,11 @@ func TestWriteMarkdownEscapesTableCells(t *testing.T) {
 		if !strings.HasPrefix(line, "| https://") {
 			continue
 		}
-		// Accessibility rows have 7 columns, stack rows 5; either way the
-		// unescaped pipes must match the columns the row was written with,
-		// never the ones the page text smuggled in.
-		if n := countUnescapedPipes(line); n != 7 && n != 5 {
-			t.Errorf("row carries %d unescaped pipes, want 7 (accessibility) or 5 (stack): %q", n, line)
+		// Accessibility rows have 7 pipes, stack rows 5, asset rows 4; either
+		// way the unescaped pipes must match the columns the row was written
+		// with, never the ones the page text smuggled in.
+		if n := countUnescapedPipes(line); n != 7 && n != 5 && n != 4 {
+			t.Errorf("row carries %d unescaped pipes, want 7 (accessibility), 5 (stack) or 4 (assets): %q", n, line)
 		}
 	}
 }
