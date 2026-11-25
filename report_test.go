@@ -112,3 +112,41 @@ func TestPageDescription(t *testing.T) {
 		t.Errorf("description should appear only on the page that has one:\n%s", data)
 	}
 }
+
+// Theme color and Open Graph values show in the design section with the page
+// they came from, and are left out of both outputs when there are none (#5).
+func TestDesignMetaOutput(t *testing.T) {
+	without := &Report{Tool: "webmri", Version: "test", Target: "https://example.com"}
+	if md := WriteMarkdown(without); strings.Contains(md, "Open Graph") {
+		t.Errorf("report without design meta gained a list:\n%s", md)
+	}
+	data, err := WriteJSON(without)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), `"meta"`) {
+		t.Errorf("json without design meta carries the field:\n%s", data)
+	}
+
+	with := &Report{Tool: "webmri", Version: "test", Target: "https://example.com", Design: DesignTokens{Meta: []MetaToken{
+		{Property: "theme-color", Value: "#0a0a0a", Page: "https://example.com/"},
+		{Property: "og:title", Value: "Docs\nhome", Page: "https://example.com/docs"},
+	}}}
+	md := WriteMarkdown(with)
+	want := "Theme color and Open Graph metadata:\n\n- theme-color: #0a0a0a — https://example.com/\n- og:title: Docs home — https://example.com/docs\n\n"
+	if !strings.Contains(md, want) {
+		t.Errorf("design meta list missing or wrong, want:\n%s\nin:\n%s", want, md)
+	}
+	if strings.Index(md, "## Design tokens") > strings.Index(md, want) || strings.Index(md, want) > strings.Index(md, "## Routes") {
+		t.Errorf("design meta should sit in the design section:\n%s", md)
+	}
+	data, err = WriteJSON(with)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range []string{`"meta": [`, `"property": "theme-color"`, `"value": "#0a0a0a"`, `"page": "https://example.com/docs"`} {
+		if !strings.Contains(string(data), s) {
+			t.Errorf("json missing %s:\n%s", s, data)
+		}
+	}
+}

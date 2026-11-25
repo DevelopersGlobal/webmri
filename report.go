@@ -166,6 +166,14 @@ func WriteMarkdown(rep *Report) string {
 		}
 		w("")
 	}
+	if len(rep.Design.Meta) > 0 {
+		w("Theme color and Open Graph metadata:")
+		w("")
+		for _, m := range rep.Design.Meta {
+			w("- %s: %s — %s", m.Property, cell(m.Value), cell(m.Page))
+		}
+		w("")
+	}
 
 	w("## Routes")
 	w("")

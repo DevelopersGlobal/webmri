@@ -56,3 +56,34 @@ func TestExtractDesignInlineAndSheet(t *testing.T) {
 		t.Fatalf("fonts %v", dt.TopFonts)
 	}
 }
+
+// theme-color and og:* values are kept once each, in page order, with the
+// first page they were seen on as evidence (#5).
+func TestCollectDesignMeta(t *testing.T) {
+	pages := []pageData{
+		{PageResult: PageResult{URL: "https://example.com/"}, htmlInfo: &htmlInfo{designMeta: []metaPair{
+			{"theme-color", "#111111"}, {"og:site_name", "Example"},
+		}}},
+		{PageResult: PageResult{URL: "https://example.com/broken"}},
+		{PageResult: PageResult{URL: "https://example.com/about"}, htmlInfo: &htmlInfo{designMeta: []metaPair{
+			{"og:site_name", "Example"}, {"og:title", "About"},
+		}}},
+	}
+	got := collectDesignMeta(pages)
+	want := []MetaToken{
+		{Property: "theme-color", Value: "#111111", Page: "https://example.com/"},
+		{Property: "og:site_name", Value: "Example", Page: "https://example.com/"},
+		{Property: "og:title", Value: "About", Page: "https://example.com/about"},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got[%d] = %v, want %v", i, got[i], want[i])
+		}
+	}
+	if collectDesignMeta([]pageData{{PageResult: PageResult{URL: "https://example.com/"}, htmlInfo: &htmlInfo{}}}) != nil {
+		t.Fatal("pages without design meta should give nil")
+	}
+}
