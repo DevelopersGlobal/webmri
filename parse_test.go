@@ -207,3 +207,33 @@ func TestPageLike(t *testing.T) {
 		}
 	}
 }
+
+func TestParseHTMLDesignMeta(t *testing.T) {
+	page := `<!doctype html><html><head>
+<meta name="theme-color" content="#0A0A0A" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content=" #ffffff ">
+<meta property="og:title" content="Example Docs">
+<meta property="OG:Image" content="https://example.com/og.png">
+<meta name="og:site_name" content="Example">
+<meta property="og:description" content="out of scope">
+<meta property="og:type" content="website">
+<meta name="twitter:title" content="out of scope">
+<meta property="og:title" content="">
+</head><body></body></html>`
+	info := parseHTML([]byte(page), mustURL(t, "https://example.com/"), "https://example.com/")
+	want := []metaPair{
+		{"theme-color", "#0A0A0A"},
+		{"theme-color", "#ffffff"},
+		{"og:title", "Example Docs"},
+		{"og:image", "https://example.com/og.png"},
+		{"og:site_name", "Example"},
+	}
+	if len(info.designMeta) != len(want) {
+		t.Fatalf("designMeta %v, want %v", info.designMeta, want)
+	}
+	for i := range want {
+		if info.designMeta[i] != want[i] {
+			t.Fatalf("designMeta[%d] = %v, want %v", i, info.designMeta[i], want[i])
+		}
+	}
+}

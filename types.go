@@ -54,11 +54,20 @@ type TokenCount struct {
 	Count int    `json:"count"`
 }
 
+// MetaToken is one design-relevant <meta> value (theme-color or a basic Open
+// Graph property) and the page it was first seen on.
+type MetaToken struct {
+	Property string `json:"property"`
+	Value    string `json:"value"`
+	Page     string `json:"page"`
+}
+
 // DesignTokens is the extracted design-system surface of the target.
 type DesignTokens struct {
 	CustomProperties map[string]string `json:"custom_properties,omitempty"`
 	TopColors        []TokenCount      `json:"top_colors,omitempty"`
 	TopFonts         []TokenCount      `json:"top_fonts,omitempty"`
+	Meta             []MetaToken       `json:"meta,omitempty"`
 	Stylesheets      int               `json:"stylesheets_scanned"`
 }
 

@@ -17,7 +17,7 @@ webmri: 12 pages in 1235 ms, 5 stack findings
 A Markdown (and JSON) anatomy of the target:
 
 - **Stack** — frameworks, CMSs, hosting, CDNs, analytics, payment and monitoring services, detected by heuristic fingerprints. Each finding is labelled `observed` (the pattern was directly seen in a response) or `inferred` (a weaker pattern suggested it), with the URL and the exact signal as evidence. A fingerprint is a strong hint, never a guarantee — check the evidence.
-- **Design tokens** — CSS custom properties from `:root`, most-used colors, font families, from inline styles and real stylesheets.
+- **Design tokens** — CSS custom properties from `:root`, most-used colors, font families, from inline styles and real stylesheets, plus `theme-color` and the basic Open Graph tags (`og:title`, `og:image`, `og:site_name`) with the page each was seen on.
 - **Routes** — the same-host pages found via the sitemap and link crawling, capped and polite. Not an exhaustive site map.
 - **Forms** — method, target and fields of the HTML forms found in served pages, with the page each lives on.
 - **Page descriptions** — each page's `<meta name="description">`, for the pages that declare one (also `description` per page in the JSON).

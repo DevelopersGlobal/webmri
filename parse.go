@@ -13,6 +13,7 @@ type htmlInfo struct {
 	title            string
 	generator        string
 	description      string
+	designMeta       []metaPair
 	scripts          []string
 	stylesheetURLs   []string
 	styleBodies      []string
@@ -24,6 +25,22 @@ type htmlInfo struct {
 	imagesEmptyAlt   int
 	hasLang          bool
 	hasH1            bool
+}
+
+// metaPair is one theme-color or og:* value read from a <meta> tag.
+type metaPair struct {
+	property string
+	value    string
+}
+
+// designMetaProperty reports whether a <meta> name/property is one of the
+// design-relevant fields webmri records: theme-color and basic Open Graph.
+func designMetaProperty(key string) bool {
+	switch key {
+	case "theme-color", "og:title", "og:image", "og:site_name":
+		return true
+	}
+	return false
 }
 
 func attrVal(n *html.Node, key string) string {
@@ -89,6 +106,17 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 					if info.description == "" {
 						info.description = strings.TrimSpace(attrVal(n, "content"))
 					}
+				}
+				// Open Graph uses property=; some sites put og:* in name=.
+				property := strings.ToLower(strings.TrimSpace(attrVal(n, "property")))
+				for _, key := range []string{property, strings.TrimSpace(name)} {
+					if !designMetaProperty(key) {
+						continue
+					}
+					if v := strings.TrimSpace(attrVal(n, "content")); v != "" {
+						info.designMeta = append(info.designMeta, metaPair{property: key, value: v})
+					}
+					break
 				}
 			case "script":
 				if src := cleanLink(base, attrVal(n, "src")); src != "" {

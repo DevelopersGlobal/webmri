@@ -24,6 +24,7 @@ func fixtureServer(t *testing.T) *httptest.Server {
 			<title>Fixture App</title>
 			<meta name="generator" content="Hugo 0.120">
 			<meta name="description" content="A test app">
+			<meta name="theme-color" content="#ff6600">
 			<link rel="stylesheet" href="/styles.css">
 			<link rel="alternate" type="application/rss+xml" href="feeds/site.xml#latest">
 			<style>:root { --brand: #ff6600; }</style>
@@ -134,6 +135,9 @@ func TestScanEndToEnd(t *testing.T) {
 	}
 	if rep.Design.Stylesheets != 1 {
 		t.Fatalf("stylesheets %d", rep.Design.Stylesheets)
+	}
+	if len(rep.Design.Meta) != 1 || rep.Design.Meta[0] != (MetaToken{Property: "theme-color", Value: "#ff6600", Page: srv.URL + "/"}) {
+		t.Fatalf("design meta %+v", rep.Design.Meta)
 	}
 	if len(rep.Forms) != 1 || rep.Forms[0].Method != "POST" {
 		t.Fatalf("forms %+v", rep.Forms)

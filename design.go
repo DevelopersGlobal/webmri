@@ -94,7 +94,28 @@ func extractDesign(client *http.Client, pages []pageData, base *url.URL, opt Opt
 		}
 	}
 	dt.TopFonts = topCounts(fonts, 10)
+	dt.Meta = collectDesignMeta(pages)
 	return dt
+}
+
+// collectDesignMeta returns each distinct theme-color / og:* value in page
+// order, with the first page it was seen on as evidence.
+func collectDesignMeta(pages []pageData) []MetaToken {
+	seen := map[metaPair]bool{}
+	var out []MetaToken
+	for _, pd := range pages {
+		if pd.htmlInfo == nil {
+			continue
+		}
+		for _, m := range pd.htmlInfo.designMeta {
+			if seen[m] {
+				continue
+			}
+			seen[m] = true
+			out = append(out, MetaToken{Property: m.property, Value: m.value, Page: pd.URL})
+		}
+	}
+	return out
 }
 
 func topCounts(m map[string]int, limit int) []TokenCount {
