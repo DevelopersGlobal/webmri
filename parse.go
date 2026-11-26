@@ -138,7 +138,7 @@ func parseHTML(body []byte, base *url.URL, pageURL string) *htmlInfo {
 					}
 				}
 				feedType := strings.ToLower(strings.TrimSpace(strings.Split(attrVal(n, "type"), ";")[0]))
-				if hasRel("alternate") && (feedType == "application/rss+xml" || feedType == "application/atom+xml") {
+				if hasRel("alternate") && isFeedType(feedType) {
 					if href := cleanLink(base, attrVal(n, "href")); href != "" {
 						info.feeds = append(info.feeds, FeedInfo{URL: href, Page: pageURL})
 					}

@@ -214,7 +214,11 @@ func WriteMarkdown(rep *Report) string {
 		w("No RSS or Atom feeds found on scanned pages.")
 	} else {
 		for _, feed := range rep.Feeds {
-			w("- %s (found on %s)", feed.URL, feed.Page)
+			if feed.Via != "" {
+				w("- %s (found on %s via %s)", feed.URL, feed.Page, feed.Via)
+			} else {
+				w("- %s (found on %s)", feed.URL, feed.Page)
+			}
 		}
 	}
 	w("")
@@ -225,7 +229,11 @@ func WriteMarkdown(rep *Report) string {
 		w("No API, GraphQL or docs endpoints detected in links or assets.")
 	} else {
 		for _, a := range rep.APIs {
-			w("- [%s] %s (seen on %s)", a.Kind, a.URL, a.Source)
+			if a.Via != "" {
+				w("- [%s] %s (seen on %s via %s)", a.Kind, a.URL, a.Source, a.Via)
+			} else {
+				w("- [%s] %s (seen on %s)", a.Kind, a.URL, a.Source)
+			}
 		}
 	}
 	w("")
