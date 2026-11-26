@@ -466,12 +466,16 @@ func sortedKeys(m map[string]bool) []string {
 	return out
 }
 
+// dedupeFeeds keeps the first entry for each feed URL and page, so a feed
+// linked from both the HTML and the Link header is listed once.
 func dedupeFeeds(in []FeedInfo) []FeedInfo {
-	seen := map[FeedInfo]bool{}
+	type key struct{ url, page string }
+	seen := map[key]bool{}
 	out := make([]FeedInfo, 0, len(in))
 	for _, feed := range in {
-		if feed.URL != "" && !seen[feed] {
-			seen[feed] = true
+		k := key{feed.URL, feed.Page}
+		if feed.URL != "" && !seen[k] {
+			seen[k] = true
 			out = append(out, feed)
 		}
 	}
@@ -483,6 +487,11 @@ func collectFeeds(pages []pageData) []FeedInfo {
 	for _, pd := range pages {
 		if pd.htmlInfo != nil {
 			out = append(out, pd.htmlInfo.feeds...)
+		}
+		for _, e := range linkHeaderEntries(pd) {
+			if e.hasRel("alternate") && isFeedType(e.typ) {
+				out = append(out, FeedInfo{URL: e.target, Page: pd.URL, Via: linkHeaderSource})
+			}
 		}
 	}
 	return dedupeFeeds(out)

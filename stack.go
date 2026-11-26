@@ -202,7 +202,7 @@ var apiPatterns = []struct {
 func detectAPISurface(pages []pageData, base *url.URL) []APIHit {
 	seen := map[string]bool{}
 	var out []APIHit
-	consider := func(raw, source string) {
+	consider := func(raw, source, via string) {
 		u, err := url.Parse(raw)
 		if err != nil {
 			return
@@ -211,19 +211,28 @@ func detectAPISurface(pages []pageData, base *url.URL) []APIHit {
 		for _, p := range apiPatterns {
 			if p.re.MatchString(s) && !seen[s] {
 				seen[s] = true
-				out = append(out, APIHit{URL: s, Kind: p.kind, Source: source})
+				out = append(out, APIHit{URL: s, Kind: p.kind, Source: source, Via: via})
 			}
 		}
 	}
 	for _, pd := range pages {
-		if pd.htmlInfo == nil {
-			continue
+		if pd.htmlInfo != nil {
+			for _, l := range pd.htmlInfo.links {
+				consider(l, pd.URL, "")
+			}
+			for _, s := range pd.htmlInfo.scripts {
+				consider(s, pd.URL, "")
+			}
 		}
-		for _, l := range pd.htmlInfo.links {
-			consider(l, pd.URL)
-		}
-		for _, s := range pd.htmlInfo.scripts {
-			consider(s, pd.URL)
+		for _, e := range linkHeaderEntries(pd) {
+			// WordPress announces its REST API root with this relation, and
+			// the root (/wp-json/) does not match the URL patterns above.
+			if e.hasRel(wpAPIRel) && !seen[e.target] {
+				seen[e.target] = true
+				out = append(out, APIHit{URL: e.target, Kind: "api", Source: pd.URL, Via: linkHeaderSource})
+				continue
+			}
+			consider(e.target, pd.URL, linkHeaderSource)
 		}
 	}
 	if len(out) > 25 {

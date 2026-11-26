@@ -28,6 +28,8 @@ type FormInfo struct {
 type FeedInfo struct {
 	URL  string `json:"url"`
 	Page string `json:"page"`
+	// Via names a non-HTML evidence source, such as "Link header".
+	Via string `json:"via,omitempty"`
 }
 
 // PageResult is the fetch outcome for one page.
@@ -76,6 +78,8 @@ type APIHit struct {
 	URL    string `json:"url"`
 	Kind   string `json:"kind"` // api | graphql | docs
 	Source string `json:"source"`
+	// Via names a non-HTML evidence source, such as "Link header".
+	Via string `json:"via,omitempty"`
 }
 
 // Report is the full anatomy of the target.
