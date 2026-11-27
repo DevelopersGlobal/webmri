@@ -47,7 +47,10 @@ type PageResult struct {
 	HasH1            bool   `json:"has_h1"`
 	Scripts          int    `json:"scripts"`
 	Stylesheets      int    `json:"stylesheets"`
-	Error            string `json:"error,omitempty"`
+	// SoftNotFound is an inferred note, set when a 2xx HTML page's title reads
+	// like an error page (a possible soft 404). It is a hint, never a claim.
+	SoftNotFound string `json:"soft_404,omitempty"`
+	Error        string `json:"error,omitempty"`
 }
 
 // TokenCount is one design token and how often it appeared.

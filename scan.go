@@ -333,6 +333,7 @@ func fetchPage(client *http.Client, raw string, opt Options) pageData {
 		info := parseHTML(data, finalURL, pd.URL)
 		pd.Title = info.title
 		pd.Description = info.description
+		pd.SoftNotFound = softNotFoundNote(resp.StatusCode, info.title)
 		pd.Images = info.images
 		pd.ImagesMissingAlt = info.imagesMissingAlt
 		pd.ImagesEmptyAlt = info.imagesEmptyAlt

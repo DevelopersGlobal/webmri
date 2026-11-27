@@ -106,6 +106,25 @@ func WriteMarkdown(rep *Report) string {
 		w("")
 	}
 
+	// Same for possible soft 404s: only flagged pages get a row, and the
+	// section is left out when none are flagged.
+	soft := false
+	for _, p := range rep.Pages {
+		if p.SoftNotFound != "" {
+			if !soft {
+				w("## Possible soft 404s")
+				w("")
+				w("| page | status | inferred note |")
+				w("| --- | ---: | --- |")
+				soft = true
+			}
+			w("| %s | %d | %s |", cell(p.URL), p.Status, cell(p.SoftNotFound))
+		}
+	}
+	if soft {
+		w("")
+	}
+
 	w("## Stack")
 	w("")
 	if len(rep.Stack) == 0 {
