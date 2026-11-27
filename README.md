@@ -22,6 +22,7 @@ A Markdown (and JSON) anatomy of the target:
 - **Forms** — method, target and fields of the HTML forms found in served pages, with the page each lives on.
 - **Page descriptions** — each page's `<meta name="description">`, for the pages that declare one (also `description` per page in the JSON).
 - **Page assets** — how many distinct external scripts (`<script src>`) and stylesheets (`<link rel="stylesheet">`) each page references (also `scripts` and `stylesheets` per page in the JSON).
+- **Possible soft 404s** — pages served with a 2xx status whose title reads like an error page ("Page not found", "404"), flagged as an `inferred` note, never as a confirmed missing page. The section only appears when a page is flagged (also `soft_404` per page in the JSON).
 - **Feeds** — RSS and Atom feeds from `<link rel="alternate">` tags and from the HTTP `Link` response header (header hits carry `via: "Link header"` in the JSON).
 - **Programmatic surface** — links, assets and HTTP `Link` header entries that look like APIs, GraphQL endpoints or API docs, plus the WordPress REST API announced with `rel="https://api.w.org/"` (inferred candidates to investigate, not confirmed endpoints).
 - **Performance snapshot** — per-page fetch times: fastest, slowest, median, total bytes.
